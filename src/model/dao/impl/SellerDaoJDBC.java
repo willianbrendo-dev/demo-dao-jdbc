@@ -1,41 +1,126 @@
 package model.dao.impl;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Date;
 import java.util.List;
 
+import db.DbException;
 import model.dao.SellerDao;
 import model.entities.Department;
 import model.entities.Seller;
 
 public class SellerDaoJDBC implements SellerDao {
+	private Connection conn;
+
+	public SellerDaoJDBC(Connection conn) {
+		this.conn = conn;
+	}
 
 	@Override
 	public void insert(Seller obj) {
-		// TODO Auto-generated method stub
-		
+		try (PreparedStatement st = conn.prepareStatement(
+				"INSERT INTO seller "
+				+ "(Name, Email, BirthDate, BaseSalary, DepartmentId) "
+				+"VALUES "
+				+ "(?, ?, ?, ?, ?) ", Statement.RETURN_GENERATED_KEYS
+				)) {
+			
+			st.setString(1, obj.getName());
+			st.setString(2, obj.getEmail());
+			st.setDate(3, new java.sql.Date(obj.getBirthDate().getTime()));
+			st.setDouble(4, obj.getBaseSalary());
+			st.setInt(5, obj.getDepartment().getId());
+			
+			int rowsAffected = st.executeUpdate();
+			
+			if (rowsAffected > 0) {
+				try (ResultSet rs = st.getGeneratedKeys()) {
+					if (rs.next()) {
+						int id = rs.getInt(1);
+						obj.setId(id);
+						System.out.println("Inserção bem-sucedida! Novo ID: " + id);
+					}
+				}
+			}
+			else {
+				throw new DbException("Erro inesperado! Nenhuma linha afetada.");
+			}
+		}
+		catch (SQLException e) {
+			throw new DbException("Erro ao inserir vendedor: " + e.getMessage());
+		}
+
 	}
 
 	@Override
 	public void update(Seller obj) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
-	public void deleteById(Seller obj) {
+	public void deleteById(Integer id) {
 		// TODO Auto-generated method stub
-		
-	}
 
-	@Override
-	public Department findId(Seller id) {
-		// TODO Auto-generated method stub
-		return null;
 	}
+	
+	
+	@Override
+    public Seller findById(Integer id) {
+        
+        try (PreparedStatement st = conn.prepareStatement(
+                "SELECT seller.*,department.Name as DepName "
+                + "FROM seller INNER JOIN department "
+                + "ON seller.DepartmentId = department.Id "
+                + "WHERE seller.Id = ?")
+             ) {
+
+            st.setInt(1, id); // Define o valor do ID no placeholder.
+            
+            try (ResultSet rs = st.executeQuery()) {
+                
+                if (rs.next()) {
+                    // Instancia um Departamento e um Vendedor com os dados do ResultSet.
+                    Department dep = instantiateDepartment(rs);
+                    Seller obj = instantiateSeller(rs, dep);
+                    return obj;
+                }
+            }
+            // Se o ResultSet estiver vazio, retorna null.
+            return null;
+
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
+    }
+	
+	public Seller instantiateSeller(ResultSet rs, Department dep) throws SQLException {
+		Seller obj = new Seller();
+		obj.setId(rs.getInt("Id"));
+		obj.setName(rs.getString("Name"));
+		obj.setEmail(rs.getString("Email"));
+		obj.setBaseSalary(rs.getDouble("BaseSalary"));
+		obj.setDepartment(dep);
+		return obj;
+	}
+	
+	public Department instantiateDepartment(ResultSet rs) throws SQLException {
+		Department dep = new Department();
+		dep.setId(rs.getInt("DepartmentId"));
+		dep.setName(rs.getString("DepName"));
+		return dep;
+	}
+	
+
 
 	@Override
 	public List<Seller> findAll() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 }
