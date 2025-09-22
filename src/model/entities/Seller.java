@@ -56,6 +56,10 @@ public class Seller implements Serializable{
 		public Date getBirthDate() {
 			return birthDate;
 		}
+		
+		public void setBirthDate(Date date) {
+			this.birthDate = date;
+		}
 
 		public double getBaseSalary() {
 			return baseSalary;
