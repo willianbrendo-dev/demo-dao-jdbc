@@ -14,13 +14,7 @@ public class Main {
 		// A fábrica cria o objeto DAO e já injeta a conexão.
         SellerDao sellerDao = DaoFactory.createSellerDao();
         
-        Department dep = new Department(2, null);
-
-        List<Seller> list = sellerDao.findAll();
-
-        for (Seller seller : list) {
-            System.out.println(seller);
-        }		
+        sellerDao.deleteById(9);		
 				
 	}
 
